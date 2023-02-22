@@ -9,6 +9,10 @@ Shader "Unlit/ModelGrass" {
         _FogColor ("Fog Color", Color) = (1, 1, 1)
         _FogDensity ("Fog Density", Range(0.0, 1.0)) = 0.0
         _FogOffset ("Fog Offset", Range(0.0, 10.0)) = 0.0
+
+
+        //New properties for collision
+        _CollisionDepthTex ("Texture", 2D) = "white" {}
     }
 
     SubShader {
@@ -56,6 +60,8 @@ Shader "Unlit/ModelGrass" {
             float _Scale, _Droop, _FogDensity, _FogOffset;
 
             int _ChunkNum;
+            //Collision varaibles
+            sampler2D _DepthCollisionTexSampler;
 
             float4 RotateAroundYInDegrees (float4 vertex, float degrees) {
                 float alpha = degrees * UNITY_PI / 180.0;
