@@ -48,6 +48,9 @@ Shader "Unlit/ModelGrass" {
                 float4 worldPos : TEXCOORD1;
                 float noiseVal : TEXCOORD2;
                 float3 chunkNum : TEXCOORD3;
+
+                //DARIO
+                float4 rootPos : TEXCOORD4;
             };
 
             struct GrassData {
@@ -107,10 +110,14 @@ Shader "Unlit/ModelGrass" {
                 localPosition.xz += _Droop * lerp(0.5f, 1.0f, idHash) * (v.uv.y * v.uv.y * _Scale) * animationDirection;
 
 
-
-                
                 float4 worldUV = float4(positionBuffer[instanceID].uv, 0, 0);
                 
+
+                //DARIO
+                o.rootPos = grassPosition;
+                //DARIO
+
+
                 float swayVariance = lerp(0.8, 1.0, idHash);
                 float movement = v.uv.y * v.uv.y * (tex2Dlod(_WindTex, worldUV).r);
                 movement *= swayVariance;
