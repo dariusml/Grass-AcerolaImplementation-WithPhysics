@@ -7,16 +7,26 @@ public class CollisionCamera : MonoBehaviour
 {
     public Shader replacementShader;
 
+    Camera cam;
+
     private void OnEnable()
     {
-        if(replacementShader != null)
+        cam = GetComponent<Camera>();
+        if (replacementShader != null)
         {
-            GetComponent<Camera>().SetReplacementShader(replacementShader, "");
+            cam.SetReplacementShader(replacementShader, "");
         }
+    }
+
+    private void Update()
+    {
+        Vector2 position = new Vector2(transform.position.x, transform.position.z);
+        Shader.SetGlobalVector("_TexturePos", position);
+        Shader.SetGlobalFloat("_TextureWidth", cam.orthographicSize * 2);
     }
 
     private void OnDisable()
     {
-        GetComponent<Camera>().ResetReplacementShader();
+        cam.ResetReplacementShader();
     }
 }

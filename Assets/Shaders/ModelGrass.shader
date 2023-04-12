@@ -12,7 +12,9 @@ Shader "Unlit/ModelGrass" {
 
 
         //New properties for collision
-        _CollisionDepthTex ("Texture", 2D) = "white" {}
+        _CollisionDepthTex ("TextureCollision", 2D) = "white" {}
+        //_TexturePos("TexturePos", Vector) = (0,0,0,0)
+        //_TextureWidth("TextureWidth", float) = 8
     }
 
     SubShader {
@@ -61,7 +63,10 @@ Shader "Unlit/ModelGrass" {
 
             int _ChunkNum;
             //Collision varaibles
-            sampler2D _DepthCollisionTexSampler;
+            sampler2D _CollisionDepthTex;
+            float4 _CollisionDepthTex_ST;
+            uniform float2 _TexturePos;
+            uniform float _TextureWidth;
 
             float4 RotateAroundYInDegrees (float4 vertex, float degrees) {
                 float alpha = degrees * UNITY_PI / 180.0;
@@ -145,7 +150,29 @@ Shader "Unlit/ModelGrass" {
                 fogFactor = exp2(-fogFactor * fogFactor);
 
 
-                return lerp(_FogColor, grassColor, fogFactor);
+
+                //return lerp(_FogColor, grassColor, fogFactor);
+
+
+                //
+                //EXPERIMENTOS
+                //
+
+
+                //Consigo el color que le corresponde a la hierba dependiendo de la posicion de la hoja
+
+                float2 grassPos = i.worldPos.xz;
+
+                float2 relativeToCamaraPos = grassPos - _TexturePos.xy;
+
+                float2 normalizedGrassCoord = relativeToCamaraPos/_TextureWidth  + float2(0.5,0.5);
+
+                float2 uvToPick = float2(normalizedGrassCoord.x, 1 - normalizedGrassCoord.y);
+
+                fixed4 color1 = tex2D(_CollisionDepthTex,uvToPick);
+                fixed4 color2 = fixed4(uvToPick.xy,0,1);
+
+                return color1;
             }
 
             ENDCG
