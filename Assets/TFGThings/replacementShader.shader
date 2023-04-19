@@ -33,6 +33,8 @@ Shader "Unlit/replacementShader"
 
                 //normals
                 float3 viewNormal : TEXCOORD1;
+                //Depth
+                float zDepth : TEXCOORD2;
             };
 
             v2f vert (appdata v)
@@ -40,6 +42,9 @@ Shader "Unlit/replacementShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.viewNormal = normalize(mul((float3x3)UNITY_MATRIX_MV, v.normal));
+
+                float4 clipPos = UnityObjectToClipPos(v.vertex);
+                o.zDepth = clipPos.z / clipPos.w;
                 //o.viewNormal = v.objectNormal;
                 return o;
             }

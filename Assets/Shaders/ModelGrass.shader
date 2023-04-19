@@ -65,11 +65,20 @@ Shader "Unlit/ModelGrass" {
             float _Scale, _Droop, _FogDensity, _FogOffset;
 
             int _ChunkNum;
-            //Collision varaibles
+
+            ////////////////////////
+            //COLLISION PARAMETERS//
+            ////////////////////////
             sampler2D _CollisionDepthTex;
             float4 _CollisionDepthTex_ST;
+
+
             uniform float2 _TexturePos;
             uniform float _TextureWidth;
+            uniform float _CollisionShader_GrassHeight;
+            uniform sampler2D _CollisionShader_DepthTex;
+
+
 
             float4 RotateAroundYInDegrees (float4 vertex, float degrees) {
                 float alpha = degrees * UNITY_PI / 180.0;
@@ -179,8 +188,18 @@ Shader "Unlit/ModelGrass" {
                 fixed4 color1 = tex2D(_CollisionDepthTex,uvToPick);
                 fixed4 color2 = fixed4(uvToPick.xy,0,1);
 
+                //if(_CollisionShader_GrassHeight >  i.rootPos.y)
+
+                color1 = fixed4(color1.a,color1.a,color1.a,color1.a);
+
                 return color1;
             }
+
+
+
+
+
+
 
             ENDCG
         }
