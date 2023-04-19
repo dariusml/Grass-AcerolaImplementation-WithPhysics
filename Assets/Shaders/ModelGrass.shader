@@ -168,7 +168,7 @@ Shader "Unlit/ModelGrass" {
 
                 //Consigo el color que le corresponde a la hierba dependiendo de la posicion de la hoja
 
-                float2 grassPos = i.worldPos.xz;
+                float2 grassPos = i.rootPos.xz;
 
                 float2 relativeToCamaraPos = grassPos - _TexturePos.xy;
 
