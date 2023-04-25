@@ -49,10 +49,10 @@ Shader "Unlit/replacementShader"
                 return o;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            float4 frag (v2f i) : SV_Target
             {
                 // sample the texture
-                fixed4 col = fixed4(i.viewNormal,1);
+                float4 col = fixed4(i.viewNormal,i.zDepth);
                 return col;
             }
             ENDCG

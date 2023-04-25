@@ -28,12 +28,17 @@ public class CollisionCamera : MonoBehaviour
     private void Update()
     {
 
-        Vector2 position = new Vector2(transform.position.x, transform.position.z);
+        Vector3 position = new Vector3(transform.position.x, transform.position.y, transform.position.z);
+        Vector2 nearFarPlane = new Vector2(cam.nearClipPlane, cam.farClipPlane);
+
+
 
         Shader.SetGlobalFloat("_CollisionShader_GrassHeight", grassHeight);
-        Shader.SetGlobalVector("_TexturePos", position);
+        Shader.SetGlobalVector("_CollisionShader_TexturePos", position);
         Shader.SetGlobalFloat("_TextureWidth", cam.orthographicSize * 2);
         Shader.SetGlobalFloat("_CollisionShader_DepthTex", cam.orthographicSize * 2);
+        Shader.SetGlobalVector("_CollisionShader_NearFarPlane", nearFarPlane);
+        
     }
 
     private void OnDisable()

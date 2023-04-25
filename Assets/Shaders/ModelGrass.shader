@@ -73,7 +73,8 @@ Shader "Unlit/ModelGrass" {
             float4 _CollisionDepthTex_ST;
 
 
-            uniform float2 _TexturePos;
+            uniform float3 _CollisionShader_TexturePos;
+            uniform float2 _CollisionShader_NearFarPlane;
             uniform float _TextureWidth;
             uniform float _CollisionShader_GrassHeight;
             uniform sampler2D _CollisionShader_DepthTex;
@@ -94,6 +95,15 @@ Shader "Unlit/ModelGrass" {
                 sincos(alpha, sina, cosa);
                 float2x2 m = float2x2(cosa, -sina, sina, cosa);
                 return float4(mul(m, vertex.yz), vertex.xw).zxyw;
+            }
+
+            float yWorldPosition(float normalizedDistance)
+            {
+                float cameraDepth = _CollisionShader_NearFarPlane.y - _CollisionShader_NearFarPlane.x;
+                float distanceToCamera = cameraDepth * (1-normalizedDistance) + _CollisionShader_NearFarPlane.x;
+
+                float yPos = distanceToCamera + _CollisionShader_TexturePos.y;
+                return yPos;
             }
 
             v2f vert (VertexData v, uint instanceID : SV_INSTANCEID) {
@@ -179,18 +189,25 @@ Shader "Unlit/ModelGrass" {
 
                 float2 grassPos = i.rootPos.xz;
 
-                float2 relativeToCamaraPos = grassPos - _TexturePos.xy;
+                float2 relativeToCamaraPos = grassPos - _CollisionShader_TexturePos.xz;
 
                 float2 normalizedGrassCoord = relativeToCamaraPos/_TextureWidth  + float2(0.5,0.5);
 
                 float2 uvToPick = float2(normalizedGrassCoord.x, 1 - normalizedGrassCoord.y);
 
-                fixed4 color1 = tex2D(_CollisionDepthTex,uvToPick);
+                float4 currenPixelColor = tex2D(_CollisionDepthTex,uvToPick);
+
+                fixed4 color1 = currenPixelColor;
                 fixed4 color2 = fixed4(uvToPick.xy,0,1);
 
                 //if(_CollisionShader_GrassHeight >  i.rootPos.y)
 
-                color1 = fixed4(color1.a,color1.a,color1.a,color1.a);
+                //color1 = fixed4(color1.a,color1.a,color1.a,color1.a);
+
+
+                float Ypos = yWorldPosition(currenPixelColor.a);
+                float inside = step(i.rootPos.y + _CollisionShader_GrassHeight, Ypos);
+                color1 = fixed4(inside,inside,inside,inside);
 
                 return color1;
             }
