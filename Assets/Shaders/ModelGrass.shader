@@ -143,17 +143,65 @@ Shader "Unlit/ModelGrass" {
                 
                 localPosition.xz += movement;
                 
+
+                ///////////////////////////////////
+                ///////                   /////////
+                ///////   EXPERIMENTOS    /////////
+                ///////                   /////////
+
+
+                float2 grassPos = grassPosition.xz;
+
+                float2 relativeToCamaraPos = grassPos - _CollisionShader_TexturePos.xz;
+
+                float2 normalizedGrassCoord = relativeToCamaraPos/_TextureWidth  + float2(0.5,0.5);
+
+                float4 uvToPick = float4(normalizedGrassCoord.x, 1 - normalizedGrassCoord.y,0,0);
+
+                float4 currenPixelColor = tex2Dlod(_CollisionDepthTex,uvToPick);
+
+
+                float3 normalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
+                float Ypos = yWorldPosition(currenPixelColor.a);
+
+                //IS even a tiny part INSIDE??
+                float grassInside = 1 - step(grassPosition.y + _CollisionShader_GrassHeight, Ypos);
+
+
+
+
+
+                float4 outsideLocalPos = 0;
+
+
+
+                localPosition = lerp(localPosition, outsideLocalPos, grassInside );
+
+
+
+
+                ///////                   /////////
+                ///////   EXPERIMENTOS    /////////
+                ///////                   /////////
+                ///////////////////////////////////
+
+
                 float4 worldPosition = float4(grassPosition.xyz + localPosition, 1.0f);
 
                 worldPosition.y -= positionBuffer[instanceID].displacement;
                 worldPosition.y *= 1.0f + positionBuffer[instanceID].position.w * lerp(0.8f, 1.0f, idHash);
                 worldPosition.y += positionBuffer[instanceID].displacement;
-                
+
+
+
+
                 o.vertex = UnityObjectToClipPos(worldPosition);
                 o.uv = v.uv;
                 o.noiseVal = tex2Dlod(_WindTex, worldUV).r;
                 o.worldPos = worldPosition;
                 o.chunkNum = float3(randValue(_ChunkNum * 20 + 1024), randValue(randValue(_ChunkNum) * 10 + 2048), randValue(_ChunkNum * 4 + 4096));
+
+
 
                 return o;
             }
