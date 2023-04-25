@@ -52,7 +52,7 @@ Shader "Unlit/replacementShader"
             float4 frag (v2f i) : SV_Target
             {
                 // sample the texture
-                float4 col = fixed4(i.viewNormal,i.zDepth);
+                float4 col = float4(i.viewNormal,i.zDepth);
                 return col;
             }
             ENDCG
