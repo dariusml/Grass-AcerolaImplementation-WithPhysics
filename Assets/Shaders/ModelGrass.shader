@@ -171,11 +171,11 @@ Shader "Unlit/ModelGrass" {
 
 
 
-                float4 outsideLocalPos = 0;
+                float4 insideLocalPos = 0;
 
 
 
-                localPosition = lerp(localPosition, outsideLocalPos, grassInside );
+                localPosition = lerp(localPosition, insideLocalPos, grassInside );
 
 
 
