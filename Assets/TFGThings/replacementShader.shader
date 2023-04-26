@@ -33,8 +33,9 @@ Shader "Unlit/replacementShader"
 
                 //normals
                 float3 viewNormal : TEXCOORD1;
+                float3 worldNormal : TEXCOORD2;
                 //Depth
-                float zDepth : TEXCOORD2;
+                float zDepth : TEXCOORD3;
             };
 
             v2f vert (appdata v)
@@ -42,6 +43,7 @@ Shader "Unlit/replacementShader"
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.viewNormal = normalize(mul((float3x3)UNITY_MATRIX_MV, v.normal));
+                o.worldNormal = normalize(mul((float3x3)transpose(unity_WorldToObject), v.normal));
 
                 float4 clipPos = UnityObjectToClipPos(v.vertex);
                 o.zDepth = clipPos.z / clipPos.w;
@@ -52,7 +54,9 @@ Shader "Unlit/replacementShader"
             float4 frag (v2f i) : SV_Target
             {
                 // sample the texture
-                float4 col = float4(i.viewNormal,i.zDepth);
+                float3 normalColor = (i.worldNormal.xyz * 0.5) + 0.5f;
+                //float4 col = float4(i.viewNormal,i.zDepth);
+                float4 col = float4(normalColor,i.zDepth);
                 return col;
             }
             ENDCG

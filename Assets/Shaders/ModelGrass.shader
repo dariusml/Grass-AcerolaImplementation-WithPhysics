@@ -106,6 +106,19 @@ Shader "Unlit/ModelGrass" {
                 return yPos;
             }
 
+            //float4 value that represents the plane equation in the form (a, b, c, d), where (a, b, c) is the normal vector of the plane and d is the distance from the origin to the plane.
+            float4 PlaneFromPointAndNormal(float3 pointOfPlane, float3 normal)
+            {
+                float d = dot(-normal, pointOfPlane);
+                return float4(normal, d);
+            }
+            float4 PlaneFromDirectionsAndPoint(float3 dir1, float3 dir2, float3 pointOfPlane)
+            {
+                float3 normal = normalize(cross(dir1, dir2));
+                float d = -dot(normal, pointOfPlane);
+                return float4(normal, d);
+            }
+
             v2f vert (VertexData v, uint instanceID : SV_INSTANCEID) {
                 v2f o;
                 float4 grassPosition = positionBuffer[instanceID].position;
@@ -161,7 +174,7 @@ Shader "Unlit/ModelGrass" {
                 float4 currenPixelColor = tex2Dlod(_CollisionDepthTex,uvToPick);
 
 
-                float3 normalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
+                float3 worldNormalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
                 float Ypos = yWorldPosition(currenPixelColor.a);
 
                 //IS even a tiny part INSIDE??
@@ -175,7 +188,30 @@ Shader "Unlit/ModelGrass" {
 
 
 
-                localPosition = lerp(localPosition, insideLocalPos, grassInside );
+                ////////////////////////////////////////////////////////////
+                ////////   GRASS COLLISIONED VERTEX TRANSFORM    ///////////
+                ////////////////////////////////////////////////////////////
+
+                //
+                //Plane of collision point orthogonal to normal direction
+                //
+                float3 planePoint = float3(grassPosition.x,Ypos,grassPosition.z);
+
+                float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,worldNormalVector);
+                //
+                //plane up(0,1,0) and normal vector
+                //
+                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), worldNormalVector, grassPosition.xyz)
+
+                
+
+
+                // normalize the resulting vector if needed
+                //ortho = normalize(ortho);
+
+
+
+                localPosition = lerp(localPosition, insideLocalPos, grassInside);
 
 
 
