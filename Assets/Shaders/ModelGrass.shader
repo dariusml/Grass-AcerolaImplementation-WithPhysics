@@ -119,6 +119,18 @@ Shader "Unlit/ModelGrass" {
                 return float4(normal, d);
             }
 
+            float3 direction_vectorDefinedByPlanes(float4 plane1, float4 plane2)
+            {
+                // Extract the normal vectors of the two planes
+                float3 normal1 = normalize(plane1.xyz);
+                float3 normal2 = normalize(plane2.xyz);
+
+                // Calculate the direction vector of the line formed by their intersection
+                float3 direction = cross(normal1, normal2);
+
+                return normalize(direction);
+            }
+
             v2f vert (VertexData v, uint instanceID : SV_INSTANCEID) {
                 v2f o;
                 float4 grassPosition = positionBuffer[instanceID].position;
@@ -203,7 +215,7 @@ Shader "Unlit/ModelGrass" {
                 //
                 float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), worldNormalVector, grassPosition.xyz)
 
-                
+
 
 
                 // normalize the resulting vector if needed
