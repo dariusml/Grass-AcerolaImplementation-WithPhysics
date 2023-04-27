@@ -116,7 +116,7 @@ Shader "Unlit/ModelGrass" {
             {
                 float3 normal = normalize(cross(dir1, dir2));
                 float d = -dot(normal, pointOfPlane);
-                return float4(normal, d);
+                return float4(1,1,1,1);
             }
 
             float3 direction_vectorDefinedByPlanes(float4 plane1, float4 plane2)
@@ -204,6 +204,14 @@ Shader "Unlit/ModelGrass" {
                 ////////   GRASS COLLISIONED VERTEX TRANSFORM    ///////////
                 ////////////////////////////////////////////////////////////
 
+
+
+
+
+
+
+                ///////////////////////////// CALCULATIONS FOR FINAL POINT OF BEZIER CURVE //////////////////////////////
+
                 //
                 //Plane of collision point orthogonal to normal direction
                 //
@@ -212,9 +220,33 @@ Shader "Unlit/ModelGrass" {
                 float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,worldNormalVector);
                 //
                 //plane up(0,1,0) and normal vector
-                //
-                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), worldNormalVector, grassPosition.xyz)
+                //                                                         //dir1          //dir2             //point
+                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), worldNormalVector, grassPosition.xyz);
 
+
+                //Get the direction of the line the final point of the Bezier curve has to follow
+                float3 dirFinalBezierPoint = normalize( direction_vectorDefinedByPlanes(collisionOrthogonalPlane, grassDeformationPlane)  );
+                dirFinalBezierPoint = float3(dirFinalBezierPoint.x, abs(dirFinalBezierPoint.y), dirFinalBezierPoint.z); //Get the direction "pointing" upwards
+
+                float amountToDisplace = _CollisionShader_GrassHeight - Ypos;
+
+                float3 offsetDisplacement = dirFinalBezierPoint * amountToDisplace;
+
+
+
+
+                float3 finalBezierPoint = grassPosition.xyz + _CollisionShader_GrassHeight + offsetDisplacement;
+                
+
+
+                ///////////////////////////// END OF CALCULATIONS FOR FINAL POINT OF BEZIER CURVE //////////////////////////////
+
+
+
+
+
+
+                
 
 
 
