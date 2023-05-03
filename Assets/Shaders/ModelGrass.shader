@@ -186,7 +186,7 @@ Shader "Unlit/ModelGrass" {
                 float4 currenPixelColor = tex2Dlod(_CollisionDepthTex,uvToPick);
 
 
-                float3 worldNormalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
+                float3 collisionNormalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
                 float Ypos = yWorldPosition(currenPixelColor.a);
 
                 //IS even a tiny part INSIDE??
@@ -217,16 +217,19 @@ Shader "Unlit/ModelGrass" {
                 //
                 float3 planePoint = float3(grassPosition.x,Ypos,grassPosition.z);
 
-                float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,worldNormalVector);
+                float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,collisionNormalVector);
                 //
                 //plane up(0,1,0) and normal vector
                 //                                                         //dir1          //dir2             //point
-                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), worldNormalVector, grassPosition.xyz);
+                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), collisionNormalVector, grassPosition.xyz);
 
 
                 //Get the direction of the line the final point of the Bezier curve has to follow
                 float3 dirFinalBezierPoint = normalize( direction_vectorDefinedByPlanes(collisionOrthogonalPlane, grassDeformationPlane)  );
-                dirFinalBezierPoint = float3(dirFinalBezierPoint.x, abs(dirFinalBezierPoint.y), dirFinalBezierPoint.z); //Get the direction "pointing" upwards
+                //Should I invert the direction? it should always be pointing upwards
+                float shouldInvert = max(0, -1*sign(dirFinalBezierPoint.y));
+                dirFinalBezierPoint = lerp(dirFinalBezierPoint, -dirFinalBezierPoint, shouldInvert);
+
 
                 float amountToDisplace = _CollisionShader_GrassHeight - Ypos;
 
@@ -235,7 +238,7 @@ Shader "Unlit/ModelGrass" {
 
 
 
-                float3 finalBezierPoint = grassPosition.xyz + _CollisionShader_GrassHeight + offsetDisplacement;
+                float3 finalBezierPointOffset = float3(0,Ypos - grassPosition.y,0) + offsetDisplacement;
                 
 
 
@@ -243,8 +246,7 @@ Shader "Unlit/ModelGrass" {
 
 
 
-
-
+                insideLocalPos = localPosition + float4(finalBezierPointOffset,0);
 
                 
 
