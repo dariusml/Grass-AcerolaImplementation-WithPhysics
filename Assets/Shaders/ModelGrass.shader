@@ -116,7 +116,7 @@ Shader "Unlit/ModelGrass" {
             {
                 float3 normal = normalize(cross(dir1, dir2));
                 float d = -dot(normal, pointOfPlane);
-                return float4(1,1,1,1);
+                return float4(normal, d);
             }
 
             float3 direction_vectorDefinedByPlanes(float4 plane1, float4 plane2)
@@ -129,6 +129,26 @@ Shader "Unlit/ModelGrass" {
                 float3 direction = cross(normal1, normal2);
 
                 return normalize(direction);
+            }
+
+            // Calculate the position on a Bezier curve
+            float3 BezierCurve(float t, float3 p0, float3 p1, float3 p2, float3 p3)
+            {
+                /*
+                float _tt = t*t;
+                float _ttt = _tt*t;
+                float _3ttt= 3*_ttt;
+                float _3tt = 3*_tt;
+                float _3t = 3*t;
+
+                float3 finalPoint = p0*(-_ttt + _3tt - _3t + 1) + p1*(_3ttt - 6*_tt + _3t) + p2*(-_3ttt + _3tt) + p3*(_ttt);
+
+                return finalPoint;
+                */
+                float3 dir = p3 - p0;
+
+                return (p0 + dir*t);
+                
             }
 
             v2f vert (VertexData v, uint instanceID : SV_INSTANCEID) {
@@ -189,10 +209,13 @@ Shader "Unlit/ModelGrass" {
                 float3 collisionNormalVector = normalize( currenPixelColor.xyz * 2 - float3(1,1,1) );
                 float Ypos = yWorldPosition(currenPixelColor.a);
 
-                //IS even a tiny part INSIDE??
+                //IS even a tiny part INSIDE??, is it below root?
+                float grassAffectedByCollision = 0;
+                
                 float grassInside = 1 - step(grassPosition.y + _CollisionShader_GrassHeight, Ypos);
+                float grassAbove = step( grassPosition.y, Ypos);
 
-
+                grassAffectedByCollision = min(grassInside,grassAbove);
 
 
 
@@ -214,39 +237,51 @@ Shader "Unlit/ModelGrass" {
 
                 //
                 //Plane of collision point orthogonal to normal direction
+                //atahid plane contains one of the points of the top tip of the grass
                 //
-                float3 planePoint = float3(grassPosition.x,Ypos,grassPosition.z);
+                float3 planePoint = float3(grassPosition.x,Ypos,grassPosition.z);                               //point contained in the plane, necessary for calculations
 
-                float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,collisionNormalVector);
+                float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,collisionNormalVector);    // (A B C D) of the plane formed by point and normal
+
+
                 //
-                //plane up(0,1,0) and normal vector
+                //plane formed by-> up(0,1,0) and normal vector, necessary for some calculations
+                //
                 //                                                         //dir1          //dir2             //point
                 float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), collisionNormalVector, grassPosition.xyz);
 
 
                 //Get the direction of the line the final point of the Bezier curve has to follow
                 float3 dirFinalBezierPoint = normalize( direction_vectorDefinedByPlanes(collisionOrthogonalPlane, grassDeformationPlane)  );
+
                 //Should I invert the direction? it should always be pointing upwards
                 float shouldInvert = max(0, -1*sign(dirFinalBezierPoint.y));
                 dirFinalBezierPoint = lerp(dirFinalBezierPoint, -dirFinalBezierPoint, shouldInvert);
 
 
-                float amountToDisplace = _CollisionShader_GrassHeight - Ypos;
+                float amountToDisplace = _CollisionShader_GrassHeight + grassPosition.y  - Ypos;
 
                 float3 offsetDisplacement = dirFinalBezierPoint * amountToDisplace;
 
 
 
 
-                float3 finalBezierPointOffset = float3(0,Ypos - grassPosition.y,0) + offsetDisplacement;
+                float3 finalBezierLocalPoint = float3( 0 ,Ypos - grassPosition.y,0) + offsetDisplacement;
+                float3 point3BezierOffset=float3(0, Ypos - grassPosition.y, 0 );
+                float3 point2BezierOffset=float3(0, 0, 0 ); //this point represent grass hardness
+                float3 point1BezierOffset=float3(0, 0, 0 ); //this point represent grass hardness
                 
+                float3 FinalBezierPoint = BezierCurve( localPosition.y /_CollisionShader_GrassHeight ,point1BezierOffset, point2BezierOffset, point3BezierOffset, finalBezierLocalPoint);
+                float3 localXZ_vertexOffset = float3(localPosition.x,0,localPosition.z);
+
+
 
 
                 ///////////////////////////// END OF CALCULATIONS FOR FINAL POINT OF BEZIER CURVE //////////////////////////////
 
 
 
-                insideLocalPos = localPosition + float4(finalBezierPointOffset,0);
+                insideLocalPos = float4(FinalBezierPoint + localXZ_vertexOffset,0);
 
                 
 
@@ -257,7 +292,7 @@ Shader "Unlit/ModelGrass" {
 
 
 
-                localPosition = lerp(localPosition, insideLocalPos, grassInside);
+                localPosition = lerp(localPosition, insideLocalPos, grassAffectedByCollision);
 
 
 
@@ -336,8 +371,23 @@ Shader "Unlit/ModelGrass" {
 
 
                 float Ypos = yWorldPosition(currenPixelColor.a);
-                float inside = step(i.rootPos.y + _CollisionShader_GrassHeight, Ypos);
-                color1 = fixed4(inside,inside,inside,inside);
+
+
+
+
+
+                //IS even a tiny part INSIDE??, is it below root?
+                float grassAffectedByCollision = 0;
+                
+                float grassInside = 1 - step(i.rootPos.y + _CollisionShader_GrassHeight, Ypos);
+                float grassAbove = step( i.rootPos.y, Ypos);
+
+                grassAffectedByCollision = min(grassInside,grassAbove);
+
+                fixed3 finalColor = 1 - grassAffectedByCollision;
+
+                
+                color1 = fixed4(finalColor.xyz,1);
 
                 return color1;
             }

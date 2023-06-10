@@ -6,7 +6,7 @@ using UnityEngine;
 public class CollisionCamera : MonoBehaviour
 {
     [SerializeField] ModelGrass modelGrassScript;
-    float grassHeight = 0;
+    public float grassHeight = 0;
     public Shader replacementShader;
 
     Camera cam;
@@ -22,7 +22,7 @@ public class CollisionCamera : MonoBehaviour
 
     private void Start()
     {
-        grassHeight = calculateHrassHeight(modelGrassScript.grassMesh);
+        //grassHeight = calculateHrassHeight(modelGrassScript.grassMesh);
     }
 
     private void Update()
