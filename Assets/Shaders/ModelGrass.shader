@@ -4,7 +4,7 @@ Shader "Unlit/ModelGrass" {
         _Albedo2 ("Albedo 2", Color) = (1, 1, 1)
         _AOColor ("Ambient Occlusion", Color) = (1, 1, 1)
         _TipColor ("Tip Color", Color) = (1, 1, 1)
-        _Scale ("Scale", Range(0.0, 2.0)) = 0.0
+        _Scale ("Scale", Range(0.0, 10.0)) = 0.0
         _Droop ("Droop", Range(0.0, 10.0)) = 0.0
         _FogColor ("Fog Color", Color) = (1, 1, 1)
         _FogDensity ("Fog Density", Range(0.0, 1.0)) = 0.0
@@ -134,7 +134,7 @@ Shader "Unlit/ModelGrass" {
             // Calculate the position on a Bezier curve
             float3 BezierCurve(float t, float3 p0, float3 p1, float3 p2, float3 p3)
             {
-                /*
+
                 float _tt = t*t;
                 float _ttt = _tt*t;
                 float _3ttt= 3*_ttt;
@@ -144,10 +144,10 @@ Shader "Unlit/ModelGrass" {
                 float3 finalPoint = p0*(-_ttt + _3tt - _3t + 1) + p1*(_3ttt - 6*_tt + _3t) + p2*(-_3ttt + _3tt) + p3*(_ttt);
 
                 return finalPoint;
-                */
-                float3 dir = p3 - p0;
 
-                return (p0 + dir*t);
+                //float3 dir = p3 - p0;
+
+                //return (p0 + dir*t);
                 
             }
 
@@ -168,8 +168,10 @@ Shader "Unlit/ModelGrass" {
                 //Lo gira pork el modelado esta mal
                 float4 localPosition = RotateAroundXInDegrees(v.vertex, 90.0f);
                 localPosition = RotateAroundYInDegrees(localPosition, idHash * 180.0f);//Giro para añadir variedad
-                //Height displacement
-                localPosition.y += _Scale * v.uv.y * v.uv.y * v.uv.y;
+                //DARIO CHANGES
+                localPosition.y += _CollisionShader_GrassHeight;
+                //END OF DARIO CHANGES
+
                 //Parece que cambia la X dependiendo de la altura de la hierba, a mas altura mas lo cambia
                 localPosition.xz += _Droop * lerp(0.5f, 1.0f, idHash) * (v.uv.y * v.uv.y * _Scale) * animationDirection;
 
@@ -178,7 +180,8 @@ Shader "Unlit/ModelGrass" {
                 
 
                 //DARIO
-                o.rootPos = grassPosition;
+                float4 rootPos =  float4(grassPosition.x, grassPosition.y - _CollisionShader_GrassHeight,grassPosition.z, grassPosition.w);
+                o.rootPos = rootPos;
                 //DARIO
 
 
@@ -193,9 +196,10 @@ Shader "Unlit/ModelGrass" {
                 ///////                   /////////
                 ///////   EXPERIMENTOS    /////////
                 ///////                   /////////
+                float realGrassHeight = _CollisionShader_GrassHeight + _Scale;
 
 
-                float2 grassPos = grassPosition.xz;
+                float2 grassPos = rootPos.xz;
 
                 float2 relativeToCamaraPos = grassPos - _CollisionShader_TexturePos.xz;
 
@@ -212,8 +216,8 @@ Shader "Unlit/ModelGrass" {
                 //IS even a tiny part INSIDE??, is it below root?
                 float grassAffectedByCollision = 0;
                 
-                float grassInside = 1 - step(grassPosition.y + _CollisionShader_GrassHeight, Ypos);
-                float grassAbove = step( grassPosition.y, Ypos);
+                float grassInside = 1 - step(rootPos.y + realGrassHeight, Ypos);
+                float grassAbove = step( rootPos.y, Ypos);
 
                 grassAffectedByCollision = min(grassInside,grassAbove);
 
@@ -239,7 +243,7 @@ Shader "Unlit/ModelGrass" {
                 //Plane of collision point orthogonal to normal direction
                 //atahid plane contains one of the points of the top tip of the grass
                 //
-                float3 planePoint = float3(grassPosition.x,Ypos,grassPosition.z);                               //point contained in the plane, necessary for calculations
+                float3 planePoint = float3(rootPos.x,Ypos,rootPos.z);                               //point contained in the plane, necessary for calculations
 
                 float4 collisionOrthogonalPlane = PlaneFromPointAndNormal(planePoint,collisionNormalVector);    // (A B C D) of the plane formed by point and normal
 
@@ -248,7 +252,7 @@ Shader "Unlit/ModelGrass" {
                 //plane formed by-> up(0,1,0) and normal vector, necessary for some calculations
                 //
                 //                                                         //dir1          //dir2             //point
-                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), collisionNormalVector, grassPosition.xyz);
+                float4 grassDeformationPlane = PlaneFromDirectionsAndPoint(float3(0,1,0), collisionNormalVector, rootPos.xyz);
 
 
                 //Get the direction of the line the final point of the Bezier curve has to follow
@@ -259,19 +263,19 @@ Shader "Unlit/ModelGrass" {
                 dirFinalBezierPoint = lerp(dirFinalBezierPoint, -dirFinalBezierPoint, shouldInvert);
 
 
-                float amountToDisplace = _CollisionShader_GrassHeight + grassPosition.y  - Ypos;
+                float amountToDisplace = realGrassHeight + rootPos.y  - Ypos;
 
                 float3 offsetDisplacement = dirFinalBezierPoint * amountToDisplace;
 
 
 
 
-                float3 finalBezierLocalPoint = float3( 0 ,Ypos - grassPosition.y,0) + offsetDisplacement;
-                float3 point3BezierOffset=float3(0, Ypos - grassPosition.y, 0 );
+                float3 finalBezierLocalPoint = float3( 0 ,Ypos - rootPos.y,0) + offsetDisplacement;
+                float3 point3BezierOffset=float3(0, Ypos - rootPos.y, 0 );
                 float3 point2BezierOffset=float3(0, 0, 0 ); //this point represent grass hardness
                 float3 point1BezierOffset=float3(0, 0, 0 ); //this point represent grass hardness
                 
-                float3 FinalBezierPoint = BezierCurve( localPosition.y /_CollisionShader_GrassHeight ,point1BezierOffset, point2BezierOffset, point3BezierOffset, finalBezierLocalPoint);
+                float3 FinalBezierPoint = BezierCurve( localPosition.y/realGrassHeight ,point1BezierOffset, point2BezierOffset, point3BezierOffset, finalBezierLocalPoint);
                 float3 localXZ_vertexOffset = float3(localPosition.x,0,localPosition.z);
 
 
@@ -302,12 +306,16 @@ Shader "Unlit/ModelGrass" {
                 ///////                   /////////
                 ///////////////////////////////////
 
+                //Height displacement
+                localPosition.y += _Scale * v.uv.y * v.uv.y * v.uv.y;
+
 
                 float4 worldPosition = float4(grassPosition.xyz + localPosition, 1.0f);
+                worldPosition.y -= _CollisionShader_GrassHeight;
 
-                worldPosition.y -= positionBuffer[instanceID].displacement;
-                worldPosition.y *= 1.0f + positionBuffer[instanceID].position.w * lerp(0.8f, 1.0f, idHash);
-                worldPosition.y += positionBuffer[instanceID].displacement;
+                //worldPosition.y -= positionBuffer[instanceID].displacement;
+                //worldPosition.y *= 1.0f + positionBuffer[instanceID].position.w * lerp(0.8f, 1.0f, idHash);
+                //worldPosition.y += positionBuffer[instanceID].displacement;
 
 
 
@@ -342,9 +350,9 @@ Shader "Unlit/ModelGrass" {
 
 
 
-                //return lerp(_FogColor, grassColor, fogFactor);
+                return lerp(_FogColor, grassColor, fogFactor);
 
-
+                /*
                 //
                 //EXPERIMENTOS
                 //
@@ -353,6 +361,7 @@ Shader "Unlit/ModelGrass" {
                 //Consigo el color que le corresponde a la hierba dependiendo de la posicion de la hoja
 
                 float2 grassPos = i.rootPos.xz;
+                float realGrassHeight = _CollisionShader_GrassHeight + _Scale;
 
                 float2 relativeToCamaraPos = grassPos - _CollisionShader_TexturePos.xz;
 
@@ -379,7 +388,7 @@ Shader "Unlit/ModelGrass" {
                 //IS even a tiny part INSIDE??, is it below root?
                 float grassAffectedByCollision = 0;
                 
-                float grassInside = 1 - step(i.rootPos.y + _CollisionShader_GrassHeight, Ypos);
+                float grassInside = 1 - step(i.rootPos.y + realGrassHeight, Ypos);
                 float grassAbove = step( i.rootPos.y, Ypos);
 
                 grassAffectedByCollision = min(grassInside,grassAbove);
@@ -390,6 +399,7 @@ Shader "Unlit/ModelGrass" {
                 color1 = fixed4(finalColor.xyz,1);
 
                 return color1;
+                */
             }
 
 

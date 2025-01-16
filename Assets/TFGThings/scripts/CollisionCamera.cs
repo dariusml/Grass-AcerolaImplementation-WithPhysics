@@ -1,7 +1,11 @@
+//Author Dario Muñoz
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Script que esta anclado a una camara y le envia toda la indormacion imprescindible al shader dobre temas de colisión
+/// </summary>
 [ExecuteInEditMode]
 public class CollisionCamera : MonoBehaviour
 {
